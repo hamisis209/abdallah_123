@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Login - Inclusive Learning System</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">Inclusive Learning System</div>
+    <!-- Navigation bar removed as requested -->
+    <div class="container">
+        <h2>Simple Login</h2>
+        <form id="loginForm">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required autofocus>
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            <button type="submit" class="btn" style="margin-top:18px;">Login</button>
+        </form>
+        <div class="error" id="errorMsg"></div>
+        <div style="margin-top: 32px; text-align: center;">
+            <span>New user? <a href="register_user.html" style="color:#ff9800; text-decoration:underline;">Register</a></span><br><br>
+            <span>Want to join as a guest? <a href="register_guest.html" style="color:#43a047; text-decoration:underline;">Register as Guest</a></span>
+        </div>
+    </div>
+    <div class="footer">&copy; 2026 Inclusive Learning System | NHM</div>
+</body>
+</html>
+    </div>
+    <script>
+        const loginForm = document.getElementById('loginForm');
+        const errorMsg = document.getElementById('errorMsg');
+        loginForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const username = loginForm.username.value.trim();
+            const password = loginForm.password.value;
+            try {
+                const response = await fetch('http://localhost:3000/api/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                if (response.ok) {
+                    window.location.href = 'index.html';
+                } else {
+                    const data = await response.json();
+                    errorMsg.textContent = data.message || 'Login failed.';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Server error. Please try again later.';
+            }
+        };
+    </script>
+</body>
+</html>

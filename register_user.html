@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register User - Inclusive Learning</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="header">Inclusive Learning System</div>
+    <!-- Navigation bar removed as requested -->
+    <div class="container">
+        <h2>Register User</h2>
+        <form id="registerForm">
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                <label for="firstName">First Name <span style="color:#e81123;">*</span>:</label>
+                <input type="text" id="firstName" name="firstName" required>
+                <label for="lastName">Last Name (optional):</label>
+                <input type="text" id="lastName" name="lastName">
+                <label for="phone">Phone Number:</label>
+                <input type="tel" id="phone" name="phone" required pattern="[0-9\-\+\s]{7,15}">
+                <label for="userID">ID:</label>
+                <input type="text" id="userID" name="userID" required>
+                <label for="newPassword">New Password:</label>
+                <input type="password" id="newPassword" name="newPassword" required>
+            </div>
+            <button type="submit" class="btn" style="margin-top:18px;">Create User Account</button>
+        </form>
+        <!-- Back button removed as requested -->
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+    </div>
+</div>
+<script>
+document.getElementById('registerForm').onsubmit = async function(e) {
+    e.preventDefault();
+    const firstName = document.getElementById('firstName').value.trim();
+    const lastName = document.getElementById('lastName').value.trim();
+    const phone = document.getElementById('phone').value.trim();
+    const userID = document.getElementById('userID').value.trim();
+    const password = document.getElementById('newPassword').value;
+    const username = firstName + (lastName ? (' ' + lastName) : '');
+    const res = await fetch('/api/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: userID, password, phone })
+    });
+    const data = await res.json();
+    if (data.status === 'success') {
+        document.getElementById('successMsg').textContent = 'Registration successful!';
+        document.getElementById('successMsg').style.display = 'block';
+        document.getElementById('errorMsg').textContent = '';
+    } else {
+        document.getElementById('errorMsg').textContent = data.message || 'Registration failed.';
+        document.getElementById('successMsg').style.display = 'none';
+    }
+};
+</script>
+</body>
+</html>
+        <button class="btn back-btn" id="backBtn">Back to Login</button>
+        <div class="error" id="errorMsg"></div>
+        <div class="success" id="successMsg"></div>
+    </div>
+    <script>
+        const registerForm = document.getElementById('registerForm');
+        const errorMsg = document.getElementById('errorMsg');
+        const successMsg = document.getElementById('successMsg');
+        const backBtn = document.getElementById('backBtn');
+
+        registerForm.onsubmit = async function(e) {
+            e.preventDefault();
+            const firstName = registerForm.firstName.value.trim();
+            const lastName = registerForm.lastName.value.trim();
+            const phone = registerForm.phone.value.trim();
+            const userID = registerForm.userID.value.trim();
+            const newPass = registerForm.newPassword.value;
+            if (!firstName) {
+                errorMsg.textContent = 'First name is required.';
+                successMsg.textContent = '';
+                return;
+            }
+            if (!phone) {
+                errorMsg.textContent = 'Phone number is required.';
+                successMsg.textContent = '';
+                return;
+            }
+            if (userID.length < 3 || newPass.length < 4) {
+                errorMsg.textContent = 'ID must be at least 3 chars and password at least 4 chars.';
+                successMsg.textContent = '';
+                return;
+            }
+            try {
+                const response = await fetch('http://localhost:3000/api/register', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ firstName, lastName, phone, userID, newPassword: newPass })
+                });
+                if (response.ok) {
+                    errorMsg.textContent = '';
+                    successMsg.textContent = 'User account created! Redirecting to login...';
+                    setTimeout(function() {
+                        window.location.href = 'login.html';
+                    }, 1200);
+                } else {
+                    const data = await response.json();
+                    errorMsg.textContent = data.message || 'Registration failed.';
+                    successMsg.textContent = '';
+                }
+            } catch (err) {
+                errorMsg.textContent = 'Server error. Please try again later.';
+                successMsg.textContent = '';
+            }
+        };
+
+        backBtn.onclick = function() {
+            window.location.href = 'login.html';
+        };
+    </script>
+</body>
+</html>
