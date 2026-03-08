@@ -1,7 +1,9 @@
+
 import os
 from flask import Flask, request, jsonify, render_template_string
 import psycopg2
 from psycopg2.extras import RealDictCursor
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
@@ -26,13 +28,13 @@ def home():
     return 'Flask backend is running!'
 
 @app.route('/api/register', methods=['POST'])
-def register():
     data = request.json
     try:
         conn = get_db_connection()
         cur = conn.cursor()
+        hashed_password = generate_password_hash(data['password'])
         cur.execute('''INSERT INTO users (username, password, phone) VALUES (%s, %s, %s)''',
-                    (data['username'], data['password'], data.get('phone')))
+                    (data['username'], hashed_password, data.get('phone')))
         conn.commit()
         cur.close()
         conn.close()
@@ -41,17 +43,17 @@ def register():
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 @app.route('/api/login', methods=['POST'])
-def login():
     data = request.json
     try:
         conn = get_db_connection()
         cur = conn.cursor()
-        cur.execute('SELECT * FROM users WHERE username=%s AND password=%s',
-                    (data['username'], data['password']))
+        cur.execute('SELECT * FROM users WHERE username=%s', (data['username'],))
         user = cur.fetchone()
         cur.close()
         conn.close()
-        if user:
+        if user and check_password_hash(user['password'], data['password']):
+            # Remove password from response for security
+            user.pop('password', None)
             return jsonify({'status': 'success', 'user': user}), 200
         else:
             return jsonify({'status': 'fail', 'message': 'Invalid credentials'}), 401

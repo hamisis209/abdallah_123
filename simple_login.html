@@ -26,10 +26,8 @@
             <span>Want to join as a guest? <a href="register_guest.html" style="color:#43a047; text-decoration:underline;">Register as Guest</a></span>
         </div>
     </div>
+
     <div class="footer">&copy; 2026 Inclusive Learning System | NHM</div>
-</body>
-</html>
-    </div>
     <script>
         const loginForm = document.getElementById('loginForm');
         const errorMsg = document.getElementById('errorMsg');
@@ -38,13 +36,13 @@
             const username = loginForm.username.value.trim();
             const password = loginForm.password.value;
             try {
-                const response = await fetch('http://localhost:3000/api/login', {
+                const response = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
                 });
                 if (response.ok) {
-                    window.location.href = 'index.html';
+                    window.location.href = '/';
                 } else {
                     const data = await response.json();
                     errorMsg.textContent = data.message || 'Login failed.';

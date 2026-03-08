@@ -13,8 +13,8 @@
         <h2>Guest Registration</h2>
         <form id="guestForm">
             <div style="display: flex; flex-direction: column; gap: 12px;">
-                <label for="fullName">Full Name:</label>
-                <input type="text" id="fullName" name="fullName" required>
+                <label for="username">Full Name:</label>
+                <input type="text" id="username" name="username" required>
                 <label for="phone">Phone Number:</label>
                 <input type="tel" id="phone" name="phone" required pattern="[0-9\-\+\s]{7,15}">
                 <label for="password">Password:</label>
@@ -37,45 +37,45 @@
 
         guestForm.onsubmit = async function(e) {
             e.preventDefault();
-            const fullName = guestForm.fullName.value.trim();
-            const phone = guestForm.phone.value.trim();
-            const password = guestForm.password.value;
-            if (!fullName) {
-                errorMsg.textContent = 'Full name is required.';
-                successMsg.textContent = '';
-                return;
-            }
-            if (!phone) {
-                errorMsg.textContent = 'Phone number is required.';
-                successMsg.textContent = '';
-                return;
-            }
-            if (password.length < 4) {
-                errorMsg.textContent = 'Password must be at least 4 characters.';
-                successMsg.textContent = '';
-                return;
-            }
-            try {
-                const response = await fetch('http://localhost:3000/api/register-guest', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, phone, password })
-                });
-                if (response.ok) {
-                    errorMsg.textContent = '';
-                    successMsg.textContent = 'Guest account created! Redirecting...';
-                    setTimeout(function() {
-                        window.location.href = 'index.html';
-                    }, 1200);
-                } else {
-                    const data = await response.json();
-                    errorMsg.textContent = data.message || 'Registration failed.';
+                const username = guestForm.username.value.trim();
+                const phone = guestForm.phone.value.trim();
+                const password = guestForm.password.value;
+                if (!username) {
+                    errorMsg.textContent = 'Full name is required.';
+                    successMsg.textContent = '';
+                    return;
+                }
+                if (!phone) {
+                    errorMsg.textContent = 'Phone number is required.';
+                    successMsg.textContent = '';
+                    return;
+                }
+                if (password.length < 4) {
+                    errorMsg.textContent = 'Password must be at least 4 characters.';
+                    successMsg.textContent = '';
+                    return;
+                }
+                try {
+                    const response = await fetch('/api/register', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ username, phone, password })
+                    });
+                    if (response.ok) {
+                        errorMsg.textContent = '';
+                        successMsg.textContent = 'Guest account created! Redirecting...';
+                        setTimeout(function() {
+                            window.location.href = '/';
+                        }, 1200);
+                    } else {
+                        const data = await response.json();
+                        errorMsg.textContent = data.message || 'Registration failed.';
+                        successMsg.textContent = '';
+                    }
+                } catch (err) {
+                    errorMsg.textContent = 'Server error. Please try again later.';
                     successMsg.textContent = '';
                 }
-            } catch (err) {
-                errorMsg.textContent = 'Server error. Please try again later.';
-                successMsg.textContent = '';
-            }
         };
 
         backBtn.onclick = function() {

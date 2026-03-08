@@ -11,6 +11,7 @@
     <!-- Navigation bar removed as requested -->
     <div class="container">
         <h2>Register User</h2>
+
         <form id="registerForm">
             <div style="display: flex; flex-direction: column; gap: 12px;">
                 <label for="firstName">First Name <span style="color:#e81123;">*</span>:</label>
@@ -26,96 +27,65 @@
             </div>
             <button type="submit" class="btn" style="margin-top:18px;">Create User Account</button>
         </form>
-        <!-- Back button removed as requested -->
+        <button class="btn back-btn" id="backBtn">Back to Login</button>
         <div class="error" id="errorMsg"></div>
         <div class="success" id="successMsg"></div>
     </div>
 </div>
 <script>
-document.getElementById('registerForm').onsubmit = async function(e) {
-    e.preventDefault();
-    const firstName = document.getElementById('firstName').value.trim();
-    const lastName = document.getElementById('lastName').value.trim();
-    const phone = document.getElementById('phone').value.trim();
-    const userID = document.getElementById('userID').value.trim();
-    const password = document.getElementById('newPassword').value;
-    const username = firstName + (lastName ? (' ' + lastName) : '');
-    const res = await fetch('/api/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: userID, password, phone })
-    });
-    const data = await res.json();
-    if (data.status === 'success') {
-        document.getElementById('successMsg').textContent = 'Registration successful!';
-        document.getElementById('successMsg').style.display = 'block';
-        document.getElementById('errorMsg').textContent = '';
-    } else {
-        document.getElementById('errorMsg').textContent = data.message || 'Registration failed.';
-        document.getElementById('successMsg').style.display = 'none';
-    }
-};
+    const registerForm = document.getElementById('registerForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const successMsg = document.getElementById('successMsg');
+    const backBtn = document.getElementById('backBtn');
+
+    registerForm.onsubmit = async function(e) {
+        e.preventDefault();
+        const firstName = registerForm.firstName.value.trim();
+        const lastName = registerForm.lastName.value.trim();
+        const phone = registerForm.phone.value.trim();
+        const userID = registerForm.userID.value.trim();
+        const password = registerForm.newPassword.value;
+        if (!firstName) {
+            errorMsg.textContent = 'First name is required.';
+            successMsg.textContent = '';
+            return;
+        }
+        if (!phone) {
+            errorMsg.textContent = 'Phone number is required.';
+            successMsg.textContent = '';
+            return;
+        }
+        if (userID.length < 3 || password.length < 4) {
+            errorMsg.textContent = 'ID must be at least 3 chars and password at least 4 chars.';
+            successMsg.textContent = '';
+            return;
+        }
+        try {
+            const response = await fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: userID, password, phone })
+            });
+            if (response.ok) {
+                errorMsg.textContent = '';
+                successMsg.textContent = 'User account created! Redirecting to login...';
+                setTimeout(function() {
+                    window.location.href = 'login.html';
+                }, 1200);
+            } else {
+                const data = await response.json();
+                errorMsg.textContent = data.message || 'Registration failed.';
+                successMsg.textContent = '';
+            }
+        } catch (err) {
+            errorMsg.textContent = 'Server error. Please try again later.';
+            successMsg.textContent = '';
+        }
+    };
+
+    backBtn.onclick = function() {
+        window.location.href = 'login.html';
+    };
 </script>
-</body>
-</html>
-        <button class="btn back-btn" id="backBtn">Back to Login</button>
-        <div class="error" id="errorMsg"></div>
-        <div class="success" id="successMsg"></div>
-    </div>
-    <script>
-        const registerForm = document.getElementById('registerForm');
-        const errorMsg = document.getElementById('errorMsg');
-        const successMsg = document.getElementById('successMsg');
-        const backBtn = document.getElementById('backBtn');
-
-        registerForm.onsubmit = async function(e) {
-            e.preventDefault();
-            const firstName = registerForm.firstName.value.trim();
-            const lastName = registerForm.lastName.value.trim();
-            const phone = registerForm.phone.value.trim();
-            const userID = registerForm.userID.value.trim();
-            const newPass = registerForm.newPassword.value;
-            if (!firstName) {
-                errorMsg.textContent = 'First name is required.';
-                successMsg.textContent = '';
-                return;
-            }
-            if (!phone) {
-                errorMsg.textContent = 'Phone number is required.';
-                successMsg.textContent = '';
-                return;
-            }
-            if (userID.length < 3 || newPass.length < 4) {
-                errorMsg.textContent = 'ID must be at least 3 chars and password at least 4 chars.';
-                successMsg.textContent = '';
-                return;
-            }
-            try {
-                const response = await fetch('http://localhost:3000/api/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ firstName, lastName, phone, userID, newPassword: newPass })
-                });
-                if (response.ok) {
-                    errorMsg.textContent = '';
-                    successMsg.textContent = 'User account created! Redirecting to login...';
-                    setTimeout(function() {
-                        window.location.href = 'login.html';
-                    }, 1200);
-                } else {
-                    const data = await response.json();
-                    errorMsg.textContent = data.message || 'Registration failed.';
-                    successMsg.textContent = '';
-                }
-            } catch (err) {
-                errorMsg.textContent = 'Server error. Please try again later.';
-                successMsg.textContent = '';
-            }
-        };
-
-        backBtn.onclick = function() {
-            window.location.href = 'login.html';
-        };
-    </script>
 </body>
 </html>
