@@ -1,14 +1,23 @@
+# Re-import send_file for HTML file serving routes
+from flask import send_file
 
 import os
-from flask import Flask, request, jsonify, render_template_string
+from flask import Flask, request, jsonify, render_template, render_template_string
 import psycopg2
 from psycopg2.extras import RealDictCursor
 from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 
+# Route for login page
+@app.route('/login')
+def login():
+    return render_template('login.html')
+
+
 # PostgreSQL connection settings (update with your credentials)
 DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = int(os.environ.get('DB_PORT', '5432'))
 DB_NAME = os.environ.get('DB_NAME', 'nhm_db')
 DB_USER = os.environ.get('DB_USER', 'postgres')
 DB_PASS = os.environ.get('DB_PASS', 'password')
@@ -16,11 +25,12 @@ DB_PASS = os.environ.get('DB_PASS', 'password')
 # Connect to PostgreSQL
 def get_db_connection():
     return psycopg2.connect(
-        host=DB_HOST,
-        dbname=DB_NAME,
-        user=DB_USER,
-        password=DB_PASS,
-        cursor_factory=RealDictCursor
+           host='127.0.0.1',
+           port=5432,
+           dbname='your_db_name',  # <-- Replace with your actual database name
+           user='postgres',
+           password='your_password',  # <-- Replace with your actual password
+           cursor_factory=RealDictCursor
     )
 
 @app.route('/')
@@ -28,6 +38,7 @@ def home():
     return 'Flask backend is running!'
 
 @app.route('/api/register', methods=['POST'])
+def register():
     data = request.json
     try:
         conn = get_db_connection()
@@ -43,7 +54,9 @@ def home():
         return jsonify({'status': 'error', 'message': str(e)}), 400
 
 @app.route('/api/login', methods=['POST'])
+def api_login():
     data = request.json
+    import traceback
     try:
         conn = get_db_connection()
         cur = conn.cursor()
@@ -58,7 +71,9 @@ def home():
         else:
             return jsonify({'status': 'fail', 'message': 'Invalid credentials'}), 401
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 400
+        tb = traceback.format_exc()
+        print(f"/api/login error: {e}\nTraceback:\n{tb}")
+        return jsonify({'status': 'error', 'message': str(e), 'traceback': tb}), 500
 
 @app.route('/api/recover', methods=['POST'])
 def recover():
@@ -77,6 +92,28 @@ def recover():
             return jsonify({'status': 'fail', 'message': 'User not found.'}), 404
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 400
+
+
+# Serve HTML files
+
+
+    
+
+@app.route('/register_user.html')
+def register_user_html():
+    return send_file('register_user.html')
+
+@app.route('/register_guest.html')
+def register_guest_html():
+    return send_file('register_guest.html')
+
+@app.route('/recover_password.html')
+def recover_password_html():
+    return send_file('recover_password.html')
+
+@app.route('/simple_login.html')
+def simple_login_html():
+    return send_file('simple_login.html')
 
 if __name__ == '__main__':
     app.run(debug=True)

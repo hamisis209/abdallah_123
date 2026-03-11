@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register User - Inclusive Learning</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="header">Inclusive Learning System</div>
+    <div class="container">
+        <h2>Register User</h2>
+        <form method="post" autocomplete="off" action="/register/">
+            {% csrf_token %}
+            {{ form.as_p }}
+            <button type="submit" class="btn" style="margin-top:18px;">Create User Account</button>
+        </form>
+        <a href="{% url 'login' %}" class="btn back-btn">Back to Login</a>
+        {% if messages %}
+            <div class="error" aria-live="polite">
+                {% for message in messages %}
+                    {{ message }}<br>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

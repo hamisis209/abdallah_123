@@ -1,0 +1,43 @@
+{% extends 'base.html' %}
+{% block title %}{{ course.title }} | Inclusive Learning System{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h2 class="card-title">{{ course.title }}</h2>
+    <p class="card-text">{{ course.description }}</p>
+    {% if course.divisions %}
+      <div class="row mt-4">
+        {% for division in course.divisions %}
+        <div class="col-md-6 mb-3">
+          <div class="card h-100">
+            <div class="card-header bg-primary text-white">{{ division.name }}</div>
+            <div class="card-body">
+              {% if division.forms %}
+                {% for form in division.forms %}
+                  <h5 class="card-title">
+                    <a href="{% url 'form_topics' course.id form.form|slugify %}">{{ form.form }}</a>
+                  </h5>
+                  <ul>
+                    {% for topic in form.topics %}
+                    <li>{{ topic }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endfor %}
+              {% else %}
+                <h5 class="card-title">Topics</h5>
+                <ul>
+                  {% for topic in division.topics %}
+                  <li>{{ topic }}</li>
+                  {% endfor %}
+                </ul>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+    <a href="{% url 'course_list' %}" class="btn btn-secondary mt-3">Back to Courses</a>
+  </div>
+</div>
+{% endblock %}

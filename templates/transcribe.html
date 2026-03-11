@@ -1,0 +1,96 @@
+{% extends 'base.html' %}
+{% block title %}Live Transcription | Inclusive Learning System{% endblock %}
+{% block extra_head %}
+<style>
+    .transcript-box {
+        width: 100%;
+        min-height: 120px;
+        border: 2px solid #4f8cff;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 1.2em;
+        background: #f9f9f9;
+        margin-top: 18px;
+    }
+    .mic-btn {
+        background: #4f8cff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 24px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 18px;
+    }
+    .mic-btn.listening {
+        background: #43a047;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-8 mx-auto">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-3">Live Transcription</h2>
+        <p class="card-text">Click the microphone and start speaking. Your words will appear below in real time.</p>
+        {% include 'partials/language_selector.html' %}
+        <button id="micBtn" class="mic-btn">🎤 Start Listening</button>
+        <div id="transcript" class="transcript-box" aria-live="polite"></div>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const micBtn = document.getElementById('micBtn');
+const transcriptBox = document.getElementById('transcript');
+let recognition, listening = false;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = window.selectedLang || 'en-US';
+    recognition.onresult = function(event) {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+        }
+        transcriptBox.textContent = transcript;
+    };
+    recognition.onend = function() {
+        listening = false;
+        micBtn.textContent = '🎤 Start Listening';
+        micBtn.classList.remove('listening');
+    };
+    micBtn.onclick = function() {
+        recognition.lang = window.selectedLang || 'en-US';
+        if (!listening) {
+            recognition.start();
+            listening = true;
+            micBtn.textContent = '🛑 Stop Listening';
+            micBtn.classList.add('listening');
+        } else {
+            recognition.stop();
+            listening = false;
+            micBtn.textContent = '🎤 Start Listening';
+            micBtn.classList.remove('listening');
+        }
+    };
+    document.getElementById('langSelect').addEventListener('change', function() {
+        if (listening) {
+            recognition.stop();
+            listening = false;
+            micBtn.textContent = '🎤 Start Listening';
+            micBtn.classList.remove('listening');
+        }
+    });
+} else {
+    micBtn.disabled = true;
+    transcriptBox.textContent = 'Sorry, your browser does not support live speech recognition.';
+}
+</script>
+{% endblock %}

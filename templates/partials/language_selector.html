@@ -1,0 +1,16 @@
+<form id="langForm" style="display:inline;">
+  <label for="langSelect" style="font-weight:bold;">Language:</label>
+  <select id="langSelect" name="lang">
+    <option value="en-US">English</option>
+    <option value="sw-TZ">Swahili</option>
+  </select>
+</form>
+<script>
+// For live transcription: update recognition language
+if (window.location.pathname.includes('transcribe')) {
+  document.getElementById('langSelect').addEventListener('change', function() {
+    window.selectedLang = this.value;
+  });
+  window.selectedLang = document.getElementById('langSelect').value;
+}
+</script>

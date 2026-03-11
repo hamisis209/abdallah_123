@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}{{ form }} Topics | {{ course.title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h2 class="card-title">{{ form }} Topics</h2>
+    <p class="card-text">Division: {{ division }}</p>
+    <ul>
+      {% for topic in topics %}
+      <li>{{ topic }}</li>
+      {% empty %}
+      <li>No topics found for this form.</li>
+      {% endfor %}
+    </ul>
+    <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary mt-3">Back to Course</a>
+  </div>
+</div>
+{% endblock %}
