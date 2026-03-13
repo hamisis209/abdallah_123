@@ -7,9 +7,11 @@
     <p class="card-text">Division: {{ division }}</p>
     <ul>
       {% for topic in topics %}
-      <li>{{ topic }}</li>
+        <li>
+          <a href="{% url 'topic_notes' course.id form topic|slugify %}">{{ topic }}</a>
+        </li>
       {% empty %}
-      <li>No topics found for this form.</li>
+        <li>No topics found for this form.</li>
       {% endfor %}
     </ul>
     <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary mt-3">Back to Course</a>

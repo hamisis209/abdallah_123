@@ -6,32 +6,28 @@
     <h2 class="card-title">{{ course.title }}</h2>
     <p class="card-text">{{ course.description }}</p>
     {% if course.divisions %}
-      <div class="row mt-4">
+      <div class="mt-4">
         {% for division in course.divisions %}
-        <div class="col-md-6 mb-3">
-          <div class="card h-100">
-            <div class="card-header bg-primary text-white">{{ division.name }}</div>
-            <div class="card-body">
-              {% if division.forms %}
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">{{ division.name }} Details</div>
+          <div class="card-body">
+            {% if division.forms %}
+              <div class="list-group">
                 {% for form in division.forms %}
-                  <h5 class="card-title">
-                    <a href="{% url 'form_topics' course.id form.form|slugify %}">{{ form.form }}</a>
-                  </h5>
-                  <ul>
-                    {% for topic in form.topics %}
-                    <li>{{ topic }}</li>
-                    {% endfor %}
-                  </ul>
+                  <div class="list-group-item d-flex align-items-center justify-content-between">
+                    <div>{{ form.form }}</div>
+                    <a href="{% url 'form_topics' course.id form.form|slugify %}" class="btn btn-sm btn-primary">View Topics</a>
+                  </div>
                 {% endfor %}
-              {% else %}
-                <h5 class="card-title">Topics</h5>
-                <ul>
-                  {% for topic in division.topics %}
-                  <li>{{ topic }}</li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-            </div>
+              </div>
+            {% else %}
+              <h5 class="card-title">Topics</h5>
+              <ul>
+                {% for topic in division.topics %}
+                <li>{{ topic }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
           </div>
         </div>
         {% endfor %}

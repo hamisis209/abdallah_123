@@ -1,5 +1,6 @@
 from django.urls import path
 from . import views
+from .offline_stt import offline_transcribe
 
 urlpatterns = [
     path('', views.dashboard_view, name='dashboard'),
@@ -9,4 +10,5 @@ urlpatterns = [
     path('recover_password/', views.recover_password_view, name='recover_password'),
     path('logout/', views.logout_view, name='logout'),
     path('transcribe/', views.transcribe_view, name='transcribe'),
+    path('offline_transcribe/', offline_transcribe, name='offline_transcribe'),
 ]

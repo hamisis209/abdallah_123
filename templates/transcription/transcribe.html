@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% block title %}Live Transcription | Inclusive Learning System{% endblock %}
+{% block extra_head %}
+<style>
+    .option-card {
+        border: 1px solid #e6e6e6;
+        border-radius: 10px;
+        padding: 16px;
+        background: #fff;
+        height: 100%;
+    }
+    .transcript-box {
+        width: 100%;
+        min-height: 120px;
+        border: 2px solid #4f8cff;
+        border-radius: 8px;
+        padding: 16px;
+        font-size: 1.2em;
+        background: #f9f9f9;
+        margin-top: 18px;
+    }
+    .mic-btn {
+        background: #4f8cff;
+        color: #fff;
+        border: none;
+        border-radius: 4px;
+        padding: 10px 24px;
+        font-size: 1em;
+        cursor: pointer;
+        margin-top: 18px;
+    }
+    .mic-btn.listening {
+        background: #43a047;
+    }
+    .file-input-compact {
+        font-size: 0.85rem;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="row">
+  <div class="col-md-10 mx-auto">
+    <div class="card shadow-sm">
+      <div class="card-body">
+        <h2 class="card-title mb-3 text-primary text-center">Speech-to-Text</h2>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <div class="option-card">
+              <h4>Live Speech Recognition</h4>
+              <p class="card-text">Click start and speak. Your words will appear below in real time.</p>
+              {% include 'partials/language_selector.html' %}
+              <button id="micBtn" class="mic-btn">Start Listening</button>
+              <div id="transcript" class="transcript-box" aria-live="polite"></div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="option-card">
+              <h4>Upload Audio (Offline)</h4>
+              <p class="card-text">Upload an audio file and get the transcript below.</p>
+              <form id="audioUploadForm" enctype="multipart/form-data">
+                <input type="file" id="audioFile" name="audio" accept="audio/*" required class="visually-hidden">
+                <label for="audioFile" class="btn btn-outline-primary btn-sm">Choose File</label>
+                <div id="fileName" class="small text-muted mt-1">No file chosen</div>
+                <button type="submit" class="btn btn-primary mt-2">Upload & Transcribe</button>
+              </form>
+              <div id="offlineTranscript" class="transcript-box mt-2"></div>
+            </div>
+          </div>
+        </div>
+        <a href="{% url 'dashboard' %}" class="btn btn-secondary mt-3">Back to Dashboard</a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const micBtn = document.getElementById('micBtn');
+const transcriptBox = document.getElementById('transcript');
+let recognition, listening = false;
+if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    recognition = new SpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = true;
+    recognition.lang = window.selectedLang || 'en-US';
+    recognition.onresult = function(event) {
+        let transcript = '';
+        for (let i = event.resultIndex; i < event.results.length; ++i) {
+            transcript += event.results[i][0].transcript;
+        }
+        transcriptBox.textContent = transcript;
+    };
+    recognition.onend = function() {
+        listening = false;
+        micBtn.textContent = 'Start Listening';
+        micBtn.classList.remove('listening');
+    };
+    micBtn.onclick = function() {
+        recognition.lang = window.selectedLang || 'en-US';
+        if (!listening) {
+            recognition.start();
+            listening = true;
+            micBtn.textContent = 'Stop Listening';
+            micBtn.classList.add('listening');
+        } else {
+            recognition.stop();
+            listening = false;
+            micBtn.textContent = 'Start Listening';
+            micBtn.classList.remove('listening');
+        }
+    };
+    document.getElementById('langSelect').addEventListener('change', function() {
+        if (listening) {
+            recognition.stop();
+            listening = false;
+            micBtn.textContent = 'Start Listening';
+            micBtn.classList.remove('listening');
+        }
+    });
+} else {
+    micBtn.disabled = true;
+    transcriptBox.textContent = 'Sorry, your browser does not support live speech recognition.';
+}
+
+// Offline transcription
+const audioUploadForm = document.getElementById('audioUploadForm');
+const offlineTranscriptBox = document.getElementById('offlineTranscript');
+const audioFileInput = document.getElementById('audioFile');
+const fileName = document.getElementById('fileName');
+audioFileInput.addEventListener('change', function() {
+    const name = audioFileInput.files && audioFileInput.files.length > 0 ? audioFileInput.files[0].name : 'No file chosen';
+    fileName.textContent = name;
+});
+audioUploadForm.addEventListener('submit', function(e) {
+    e.preventDefault();
+    const formData = new FormData(audioUploadForm);
+    offlineTranscriptBox.textContent = 'Transcribing...';
+    fetch('/offline_transcribe/', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        offlineTranscriptBox.textContent = data.transcript || data.error;
+    })
+    .catch(() => {
+        offlineTranscriptBox.textContent = 'Error during transcription.';
+    });
+});
+</script>
+{% endblock %}

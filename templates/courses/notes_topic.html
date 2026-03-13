@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}{{ topic }} Notes | {{ course.title }}{% endblock %}
+{% block content %}
+<div class="card">
+  <div class="card-body">
+    <h2 class="card-title">{{ course.title }}: {{ topic }}</h2>
+    <p class="card-text">{{ notes.overview }}</p>
+
+    <div class="mb-3">
+      <button id="speakBtn" class="btn btn-outline-primary">Listen to Explanation</button>
+      <button id="stopBtn" class="btn btn-outline-secondary ms-2" disabled>Stop</button>
+      <small class="text-muted ms-2">Uses your browser’s built-in voice.</small>
+    </div>
+
+    {% if division %}
+      <p class="text-muted">Division: {{ division }} | {{ form }}</p>
+    {% else %}
+      <p class="text-muted">{{ form }}</p>
+    {% endif %}
+
+    <h4>Key Points</h4>
+    <ul>
+      {% for item in notes.key_points %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <h4>Key Vocabulary</h4>
+    <ul>
+      {% for word in notes.vocabulary %}
+        <li>{{ word }}</li>
+      {% endfor %}
+    </ul>
+
+    <h4>Process</h4>
+    <ul>
+      {% for item in notes.process %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <h4>Common Mistakes</h4>
+    <ul>
+      {% for item in notes.common_mistakes %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <h4>Examples</h4>
+    <ul>
+      {% for item in notes.examples %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <h4>Practice</h4>
+    <ul>
+      {% for item in notes.practice %}
+        <li>{{ item }}</li>
+      {% endfor %}
+    </ul>
+
+    <a href="{% url 'form_topics' course.id form %}" class="btn btn-secondary mt-3">Back to Topics</a>
+  </div>
+</div>
+
+<script>
+  (function() {
+    const speakBtn = document.getElementById('speakBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    if (!('speechSynthesis' in window)) {
+      speakBtn.disabled = true;
+      speakBtn.textContent = 'Voice not supported';
+      return;
+    }
+
+    function buildText() {
+      const parts = [];
+      parts.push(document.querySelector('.card-title')?.textContent || '');
+      parts.push(document.querySelector('.card-text')?.textContent || '');
+      document.querySelectorAll('h4').forEach(h => {
+        const title = h.textContent || '';
+        parts.push(title + '.');
+        const list = h.nextElementSibling;
+        if (list && list.tagName === 'UL') {
+          list.querySelectorAll('li').forEach(li => parts.push(li.textContent || ''));
+        }
+      });
+      return parts.join(' ');
+    }
+
+    let utterance = null;
+    speakBtn.addEventListener('click', () => {
+      window.speechSynthesis.cancel();
+      utterance = new SpeechSynthesisUtterance(buildText());
+      utterance.rate = 0.95;
+      utterance.onend = () => {
+        stopBtn.disabled = true;
+      };
+      utterance.onerror = () => {
+        stopBtn.disabled = true;
+      };
+      stopBtn.disabled = false;
+      window.speechSynthesis.speak(utterance);
+    });
+
+    stopBtn.addEventListener('click', () => {
+      window.speechSynthesis.cancel();
+      stopBtn.disabled = true;
+    });
+  })();
+</script>
+{% endblock %}

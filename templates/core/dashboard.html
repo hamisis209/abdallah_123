@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard | Inclusive Learning System{% endblock %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <h2 class="card-title mb-1 text-center text-primary">Inclusive Learning System</h2>
+                <p class="text-muted mb-3">Dashboard</p>
+                <p class="card-text">
+                    Welcome to Inclusive Learning System{% if user.is_authenticated %}, {{ user.username }}{% endif %}.
+                </p>
+                <p class="card-text">
+                    Use the links below to access the main tools.
+                </p>
+                <div class="list-group mt-4">
+                    <a href="{% url 'transcribe' %}" class="list-group-item list-group-item-action">Transcribe Live</a>
+                    <a href="/courses/" class="list-group-item list-group-item-action">Courses</a>
+                    <a href="/notifications/" class="list-group-item list-group-item-action">Notifications</a>
+                    <a href="/admin/" class="list-group-item list-group-item-action">Admin Panel</a>
+                </div>
+                <p class="text-center text-muted mt-4 mb-0">Created by mlagaza</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
