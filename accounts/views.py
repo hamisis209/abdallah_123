@@ -1,7 +1,10 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.forms import UserCreationForm, PasswordResetForm
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import redirect, render
+from .forms import ProfileForm
+from .models import Profile
 
 
 def login_view(request):
@@ -14,6 +17,18 @@ def login_view(request):
             return redirect('dashboard')
         messages.error(request, 'Invalid username or password.')
     return render(request, 'accounts/login.html')
+
+
+def admin_login_view(request):
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        password = request.POST.get('password')
+        user = authenticate(request, username=username, password=password)
+        if user is not None and (user.is_staff or user.is_superuser):
+            login(request, user)
+            return redirect('/admin/')
+        messages.error(request, 'Admin access required.')
+    return render(request, 'accounts/admin_login.html')
 
 
 def register_view(request):
@@ -54,8 +69,22 @@ def recover_password_view(request):
 
 
 def logout_view(request):
-    if request.method == 'POST':
-        logout(request)
-        return redirect('login')
-    return redirect('login')
+	if request.method == 'POST':
+		logout(request)
+		return redirect('login')
+	return redirect('login')
+
+@login_required
+def profile_view(request):
+	if request.method == 'POST':
+		profile, _created = Profile.objects.get_or_create(user=request.user)
+		form = ProfileForm(request.POST, request.FILES, instance=profile, user=request.user)
+		if form.is_valid():
+			form.save()
+			messages.success(request, 'Profile updated.')
+			return redirect('profile')
+	else:
+		profile, _created = Profile.objects.get_or_create(user=request.user)
+		form = ProfileForm(instance=profile, user=request.user)
+	return render(request, 'accounts/profile.html', {'form': form, 'profile': profile})
 

@@ -13,7 +13,7 @@
         <form method="post" autocomplete="off">
             {% csrf_token %}
             {{ form.as_p }}
-            <button type="submit" class="btn" style="margin-top:18px;">Register as Guest</button>
+            <button type="submit" class="btn" style="margin-top:18px;">Next</button>
         </form>
         <a href="{% url 'login' %}" class="btn back-btn">Back to Login</a>
         {% if messages %}

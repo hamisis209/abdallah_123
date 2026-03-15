@@ -1,5 +1,84 @@
+import re
+import time
+from html.parser import HTMLParser
+from urllib.request import Request, urlopen
 from django.shortcuts import render
 from django.utils.text import slugify
+from django.http import Http404
+
+NECTA_CSEE_URL = 'https://www.necta.go.tz/pages/csee'
+_necta_cache = {'ts': 0, 'data': None, 'error': None}
+
+
+class _TextExtractor(HTMLParser):
+	def __init__(self):
+		super().__init__()
+		self._parts = []
+
+	def handle_data(self, data):
+		if data:
+			self._parts.append(data.strip())
+
+	def get_text(self):
+		return ' '.join(p for p in self._parts if p)
+
+
+def _split_subjects(raw):
+	raw = raw.replace(' and ', ', ')
+	raw = raw.replace(' ,', ',')
+	return [item.strip() for item in raw.split(',') if item.strip()]
+
+
+def _fetch_necta_csee_subjects():
+	now = time.time()
+	if _necta_cache['data'] and now - _necta_cache['ts'] < 6 * 60 * 60:
+		return _necta_cache['data']
+	try:
+		req = Request(NECTA_CSEE_URL, headers={'User-Agent': 'Mozilla/5.0'})
+		with urlopen(req, timeout=8) as resp:
+			html = resp.read().decode('utf-8', errors='ignore')
+		parser = _TextExtractor()
+		parser.feed(html)
+		text = parser.get_text()
+		core_subjects = []
+		optional_subjects = []
+		additional_text = ''
+
+		core_match = re.search(
+			r'There are seven core subjects.*?:\s*(.*?)(?:\.|;)',
+			text,
+			re.IGNORECASE,
+		)
+		if core_match:
+			core_subjects = _split_subjects(core_match.group(1))
+
+		opt_match = re.search(
+			r'They may take one optional subject among the following:\s*(.*?)(?:\.|No CSEE candidate)',
+			text,
+			re.IGNORECASE,
+		)
+		if opt_match:
+			optional_subjects = _split_subjects(opt_match.group(1))
+
+		add_match = re.search(
+			r'Candidates may take two additional subjects from\s*(.*?)(?:They may take one optional subject|No CSEE candidate)',
+			text,
+			re.IGNORECASE,
+		)
+		if add_match:
+			additional_text = add_match.group(1).strip()
+
+		data = {
+			'source_url': NECTA_CSEE_URL,
+			'core_subjects': core_subjects,
+			'optional_subjects': optional_subjects,
+			'additional_text': additional_text,
+		}
+		_necta_cache.update({'ts': now, 'data': data, 'error': None})
+		return data
+	except Exception as exc:
+		_necta_cache.update({'ts': now, 'data': None, 'error': str(exc)})
+		return None
 
 def _get_course_by_id(course_id):
 	if int(course_id) == 1:
@@ -8,6 +87,8 @@ def _get_course_by_id(course_id):
 		return get_physics_course()
 	if int(course_id) == 3:
 		return get_chemistry_course()
+	if int(course_id) == 4:
+		return get_biology_course()
 	return None
 
 def _find_topic(course, form_name, topic_slug):
@@ -77,7 +158,7 @@ def course_list(request):
         {
             'id': 1,
             'title': 'Mathematics',
-        'description': 'Mathematics for O-Level (Form 1-4) and Advanced (Form 5-6).',
+            'description': 'Mathematics for O-Level (Form 1-4) and Advanced (Form 5-6).',
             'detail_url': 'course_detail',
         },
         {
@@ -92,8 +173,103 @@ def course_list(request):
             'description': 'Chemistry for O-Level (Form 1-4) and Advanced (Form 5-6).',
             'detail_url': 'course_detail',
         },
+        {
+            'id': 4,
+            'title': 'Biology',
+            'description': 'Biology for O-Level (Form 1-4) and Advanced (Form 5-6).',
+            'detail_url': 'course_detail',
+        },
     ]
-    return render(request, 'courses/course_list.html', {'courses': courses})
+    necta_csee = _fetch_necta_csee_subjects()
+    return render(request, 'courses/course_list.html', {'courses': courses, 'necta_csee': necta_csee})
+
+
+def past_papers_home(request):
+	return render(request, 'courses/past_papers.html')
+
+
+def necta_past_papers(request):
+	forms = [
+		{'label': 'Form Two', 'slug': 'form2'},
+		{'label': 'Form Four', 'slug': 'form4'},
+		{'label': 'Form Six', 'slug': 'form6'},
+	]
+	return render(request, 'courses/necta_past_papers.html', {
+		'forms': forms,
+	})
+
+
+def necta_past_papers_form(request, form_name):
+	allowed = {'form2': 'Form Two', 'form4': 'Form Four', 'form6': 'Form Six'}
+	key = form_name.strip().lower().replace(' ', '')
+	if key not in allowed:
+		raise Http404('Form not found')
+	necta_csee = _fetch_necta_csee_subjects()
+	return render(request, 'courses/necta_past_papers_form.html', {
+		'form_label': allowed[key],
+		'form_slug': key,
+		'necta_csee': necta_csee,
+	})
+
+
+def annual_past_papers(request):
+	forms = [
+		{'label': 'Form One', 'slug': 'form1'},
+		{'label': 'Form Two', 'slug': 'form2'},
+		{'label': 'Form Three', 'slug': 'form3'},
+		{'label': 'Form Four', 'slug': 'form4'},
+		{'label': 'Form Five', 'slug': 'form5'},
+		{'label': 'Form Six', 'slug': 'form6'},
+	]
+	return render(request, 'courses/annual_past_papers.html', {'forms': forms})
+
+
+def joint_past_papers(request):
+	forms = [
+		{'label': 'Form One', 'slug': 'form1'},
+		{'label': 'Form Two', 'slug': 'form2'},
+		{'label': 'Form Three', 'slug': 'form3'},
+		{'label': 'Form Four', 'slug': 'form4'},
+		{'label': 'Form Five', 'slug': 'form5'},
+		{'label': 'Form Six', 'slug': 'form6'},
+	]
+	return render(request, 'courses/joint_past_papers.html', {'forms': forms})
+
+
+def annual_past_papers_form(request, form_name):
+	allowed = {
+		'form1': 'Form One',
+		'form2': 'Form Two',
+		'form3': 'Form Three',
+		'form4': 'Form Four',
+		'form5': 'Form Five',
+		'form6': 'Form Six',
+	}
+	key = form_name.strip().lower().replace(' ', '')
+	if key not in allowed:
+		raise Http404('Form not found')
+	return render(request, 'courses/annual_past_papers_form.html', {
+		'form_label': allowed[key],
+		'form_slug': key,
+	})
+
+
+def joint_past_papers_form(request, form_name):
+	allowed = {
+		'form1': 'Form One',
+		'form2': 'Form Two',
+		'form3': 'Form Three',
+		'form4': 'Form Four',
+		'form5': 'Form Five',
+		'form6': 'Form Six',
+	}
+	key = form_name.strip().lower().replace(' ', '')
+	if key not in allowed:
+		raise Http404('Form not found')
+	return render(request, 'courses/joint_past_papers_form.html', {
+		'form_label': allowed[key],
+		'form_slug': key,
+	})
 
 def get_mathematics_course():
 	return {
@@ -317,6 +493,74 @@ def get_chemistry_course():
 						'Analytical Chemistry',
 						'Polymers and Materials',
 						'Chemistry in Industry and Environment'
+					]},
+				]
+			}
+		]
+	}
+
+
+def get_biology_course():
+	return {
+		'id': 4,
+		'title': 'Biology',
+		'description': 'Biology for O-Level (Form 1-4) and Advanced (Form 5-6).',
+		'divisions': [
+			{
+				'name': 'O-Level',
+				'forms': [
+					{'form': 'Form 1', 'topics': [
+						'Introduction to Biology',
+						'Classification of Living Things',
+						'Cell Structure and Function',
+						'Nutrition (Basics)',
+						'Respiration (Basics)',
+						'Health and Hygiene'
+					]},
+					{'form': 'Form 2', 'topics': [
+						'Digestive System',
+						'Circulatory System',
+						'Transport in Plants',
+						'Reproduction in Plants',
+						'Growth and Development',
+						'Environmental Conservation'
+					]},
+					{'form': 'Form 3', 'topics': [
+						'Genetics (Intro)',
+						'Human Reproduction',
+						'Nervous System',
+						'Excretion',
+						'Coordination and Control',
+						'Immunity'
+					]},
+					{'form': 'Form 4', 'topics': [
+						'Ecology',
+						'Evolution (Intro)',
+						'Biotechnology (Basics)',
+						'Population and Communities',
+						'Human Health',
+						'Revision'
+					]},
+				]
+			},
+			{
+				'name': 'Advanced (A-Level)',
+				'forms': [
+					{'form': 'Form 5', 'topics': [
+						'Advanced Cell Biology',
+						'Biochemistry (Basics)',
+						'Genetics (Advanced)',
+						'Physiology (Basics)',
+						'Ecology (Advanced)',
+						'Microbiology (Intro)'
+					]},
+					{'form': 'Form 6', 'topics': [
+						'Plant Physiology',
+						'Human Physiology',
+						'Immunology',
+						'Biotechnology (Advanced)',
+						'Evolution (Advanced)',
+						'Research Methods'
 					]},
 				]
 			}

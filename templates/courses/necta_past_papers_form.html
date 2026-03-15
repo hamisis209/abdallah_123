@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% block title %}{{ form_label }} NECTA Past Papers | Inclusive Learning System{% endblock %}
+{% block content %}
+<h2>{{ form_label }} NECTA Past Papers</h2>
+<div class="row">
+  <div class="col-12">
+    <button id="showAllSubjects" class="btn btn-outline-secondary btn-sm mb-2" type="button" style="display:none;">Show All Subjects</button>
+    <ul>
+      <li class="necta-subject-item" data-subject="physics">
+        <a href="#" class="link-primary necta-subject" data-subject="physics">Physics</a>
+        <div class="necta-years" id="years-physics" style="display:none; margin-top:6px; margin-left:18px;"></div>
+      </li>
+      <li class="necta-subject-item" data-subject="mathematics">
+        <a href="#" class="link-primary necta-subject" data-subject="mathematics">Mathematics</a>
+        <div class="necta-years" id="years-mathematics" style="display:none; margin-top:6px; margin-left:18px;"></div>
+      </li>
+      <li class="necta-subject-item" data-subject="chemistry">
+        <a href="#" class="link-primary necta-subject" data-subject="chemistry">Chemistry</a>
+        <div class="necta-years" id="years-chemistry" style="display:none; margin-top:6px; margin-left:18px;"></div>
+      </li>
+      <li class="necta-subject-item" data-subject="biology">
+        <a href="#" class="link-primary necta-subject" data-subject="biology">Biology</a>
+        <div class="necta-years" id="years-biology" style="display:none; margin-top:6px; margin-left:18px;"></div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<a href="{% url 'necta_past_papers' %}" class="btn btn-secondary mt-3">Back to NECTA Past Papers</a>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  (function() {
+    const years = [];
+    for (let y = 2000; y <= 2026; y++) years.push(y);
+
+    function renderYears(container) {
+      if (container.dataset.rendered === 'true') return;
+      const ul = document.createElement('ul');
+      ul.style.marginTop = '6px';
+      ul.style.marginLeft = '0';
+      years.forEach(y => {
+        const li = document.createElement('li');
+        li.textContent = y;
+        ul.appendChild(li);
+      });
+      container.appendChild(ul);
+      container.dataset.rendered = 'true';
+    }
+
+    const showAllBtn = document.getElementById('showAllSubjects');
+    const subjectItems = document.querySelectorAll('.necta-subject-item');
+
+    function showAllSubjects() {
+      subjectItems.forEach(item => item.style.display = 'list-item');
+      document.querySelectorAll('.necta-years').forEach(y => y.style.display = 'none');
+      if (showAllBtn) showAllBtn.style.display = 'none';
+    }
+
+    if (showAllBtn) {
+      showAllBtn.addEventListener('click', showAllSubjects);
+    }
+
+    document.querySelectorAll('.necta-subject').forEach(link => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const subject = link.dataset.subject;
+        const container = document.getElementById(`years-${subject}`);
+        if (!container) return;
+        document.querySelectorAll('.necta-years').forEach(other => {
+          if (other !== container) other.style.display = 'none';
+        });
+        subjectItems.forEach(item => {
+          if (item.dataset.subject !== subject) {
+            item.style.display = 'none';
+          } else {
+            item.style.display = 'list-item';
+          }
+        });
+        if (showAllBtn) showAllBtn.style.display = 'inline-block';
+        renderYears(container);
+        const isHidden = container.style.display === 'none';
+        container.style.display = isHidden ? 'block' : 'none';
+        if (!isHidden) {
+          showAllSubjects();
+        }
+      });
+    });
+  })();
+</script>
+{% endblock %}

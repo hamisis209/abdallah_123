@@ -4,12 +4,16 @@
 <div class="card">
   <div class="card-body">
     <h2 class="card-title">{{ course.title }}: {{ topic }}</h2>
+    {% if notes.overview %}
     <p class="card-text">{{ notes.overview }}</p>
+    {% else %}
+    <p class="card-text text-muted">Overview not available yet.</p>
+    {% endif %}
 
     <div class="mb-3">
       <button id="speakBtn" class="btn btn-outline-primary">Listen to Explanation</button>
       <button id="stopBtn" class="btn btn-outline-secondary ms-2" disabled>Stop</button>
-      <small class="text-muted ms-2">Uses your browser’s built-in voice.</small>
+      <small class="text-muted ms-2">Uses your browser's built-in voice.</small>
     </div>
 
     {% if division %}
@@ -19,46 +23,70 @@
     {% endif %}
 
     <h4>Key Points</h4>
+    {% if notes.key_points %}
     <ul>
       {% for item in notes.key_points %}
         <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No key points available.</p>
+    {% endif %}
 
     <h4>Key Vocabulary</h4>
+    {% if notes.vocabulary %}
     <ul>
       {% for word in notes.vocabulary %}
         <li>{{ word }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No vocabulary listed.</p>
+    {% endif %}
 
     <h4>Process</h4>
+    {% if notes.process %}
     <ul>
       {% for item in notes.process %}
         <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No process steps available.</p>
+    {% endif %}
 
     <h4>Common Mistakes</h4>
+    {% if notes.common_mistakes %}
     <ul>
       {% for item in notes.common_mistakes %}
         <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No common mistakes listed.</p>
+    {% endif %}
 
     <h4>Examples</h4>
+    {% if notes.examples %}
     <ul>
       {% for item in notes.examples %}
         <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No examples available.</p>
+    {% endif %}
 
     <h4>Practice</h4>
+    {% if notes.practice %}
     <ul>
       {% for item in notes.practice %}
         <li>{{ item }}</li>
       {% endfor %}
     </ul>
+    {% else %}
+    <p class="text-muted">No practice items yet.</p>
+    {% endif %}
 
     <a href="{% url 'form_topics' course.id form %}" class="btn btn-secondary mt-3">Back to Topics</a>
   </div>
@@ -111,3 +139,4 @@
   })();
 </script>
 {% endblock %}
+

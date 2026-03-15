@@ -21,13 +21,13 @@
     <div class="collapse navbar-collapse" id="navbarNav">
       <ul class="navbar-nav me-auto mb-2 mb-lg-0">
         <li class="nav-item"><a class="nav-link" href="/">Dashboard</a></li>
-        <li class="nav-item"><a class="nav-link" href="/transcribe/">Transcribe Live</a></li>
-        <li class="nav-item"><a class="nav-link" href="/courses/">Courses</a></li>
+        <li class="nav-item"><a class="nav-link" href="{% url 'profile' %}">Profile</a></li>
+        <li class="nav-item"><a class="nav-link" href="/courses/">Academics</a></li>
+        <li class="nav-item"><a class="nav-link" href="/transcribe/">Transcribe</a></li>
         <li class="nav-item"><a class="nav-link" href="/notifications/">Notifications</a></li>
       </ul>
       <ul class="navbar-nav">
         {% if user.is_authenticated %}
-        <li class="nav-item"><a class="nav-link" href="/profile/">Profile</a></li>
         <li class="nav-item"><form method="post" action="/logout/">{% csrf_token %}<button class="btn btn-link nav-link" type="submit">Logout</button></form></li>
         {% else %}
         <li class="nav-item"><a class="nav-link" href="/login/">Login</a></li>

@@ -3,7 +3,7 @@
 <head>
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Login - Inclusive Learning</title>
+	<title>Admin Login - Inclusive Learning</title>
 	<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
@@ -113,42 +113,24 @@
 			font-weight: 600;
 			margin-top: 10px;
 		}
-		.aris-btn.secondary {
-			background: #4caf50;
-		}
-		.aris-divider {
-			margin: 16px 0;
-			color: #9aa4b2;
-			font-size: 0.8rem;
-			display: flex;
-			align-items: center;
-			gap: 8px;
-		}
-		.aris-divider::before,
-		.aris-divider::after {
-			content: '';
-			flex: 1;
-			height: 1px;
-			background: #e5e7eb;
-		}
 	</style>
 	<div class="aris-topbar">
 		<div class="aris-brand">
 			<span class="aris-brand-mark"></span>
 			<span>Inclusive Learning System</span>
 		</div>
-		<span>Portal</span>
+		<span>Admin</span>
 	</div>
 	<div class="aris-bg">
 		<div class="aris-card">
-			<div class="aris-crest">CREST</div>
-			<div class="aris-title">Login to your Inclusive Learning account</div>
-			<div class="aris-subtitle">Your credentials</div>
+			<div class="aris-crest">ADMIN</div>
+			<div class="aris-title">Admin Login</div>
+			<div class="aris-subtitle">Administrator credentials</div>
 			<form method="post" autocomplete="off">
 				{% csrf_token %}
 				<div class="aris-input-wrap">
 					<span class="icon">👤</span>
-					<input type="text" id="username" name="username" class="aris-input" placeholder="Username or Email" required autofocus aria-label="Username or User ID">
+					<input type="text" id="username" name="username" class="aris-input" placeholder="Admin username" required autofocus aria-label="Admin username">
 				</div>
 				<div class="aris-input-wrap">
 					<span class="icon">🔒</span>
@@ -161,13 +143,11 @@
 						{% endfor %}
 					</div>
 				{% endif %}
-				<div style="text-align:right;">
-					<a href="{% url 'recover_password' %}" class="aris-link">Forgot password?</a>
-				</div>
 				<button type="submit" class="aris-btn">Login</button>
 			</form>
-			<div class="aris-divider">Don't have an account?</div>
-			<a href="{% url 'register' %}" class="aris-btn secondary" style="display:inline-block; text-decoration:none;">Sign up</a>
+			<div style="margin-top:12px;">
+				<a href="{% url 'login' %}" class="aris-link">Back to User Login</a>
+			</div>
 		</div>
 	</div>
 </body>

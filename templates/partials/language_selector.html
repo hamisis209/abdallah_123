@@ -1,6 +1,7 @@
 <form id="langForm" style="display:inline;">
   <label for="langSelect" style="font-weight:bold;">Language:</label>
   <select id="langSelect" name="lang">
+    <option value="">Auto (browser default)</option>
     <option value="en-US">English</option>
     <option value="sw-TZ">Swahili</option>
   </select>
@@ -9,8 +10,8 @@
 // For live transcription: update recognition language
 if (window.location.pathname.includes('transcribe')) {
   document.getElementById('langSelect').addEventListener('change', function() {
-    window.selectedLang = this.value;
+    window.selectedLang = this.value || '';
   });
-  window.selectedLang = document.getElementById('langSelect').value;
+  window.selectedLang = document.getElementById('langSelect').value || '';
 }
 </script>

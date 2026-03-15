@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}{{ form_label }} Annual Past Papers | Inclusive Learning System{% endblock %}
+{% block content %}
+<h2>{{ form_label }} Annual Past Papers</h2>
+<p class="text-muted">Add PDF files for {{ form_label }} in <code>static/past_papers/annual/{{ form_slug }}</code> and link them below.</p>
+
+<div class="row">
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">Sample Paper</h5>
+        <p class="card-text">Replace with actual PDF links.</p>
+        <a href="#" class="btn btn-primary">Download PDF</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<a href="{% url 'annual_past_papers' %}" class="btn btn-secondary mt-3">Back to Annual Past Papers</a>
+{% endblock %}

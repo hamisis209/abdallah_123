@@ -32,6 +32,17 @@
     .mic-btn.listening {
         background: #43a047;
     }
+    .mic-actions {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 12px;
+    }
+    .mic-status {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: #4b5a6b;
+    }
     .file-input-compact {
         font-size: 0.85rem;
     }
@@ -42,21 +53,26 @@
   <div class="col-md-10 mx-auto">
     <div class="card shadow-sm">
       <div class="card-body">
-        <h2 class="card-title mb-3 text-primary text-center">Speech-to-Text</h2>
-        <div class="row g-3">
-          <div class="col-md-6">
-            <div class="option-card">
-              <h4>Live Speech Recognition</h4>
-              <p class="card-text">Click start and speak. Your words will appear below in real time.</p>
-              {% include 'partials/language_selector.html' %}
-              <button id="micBtn" class="mic-btn">Start Listening</button>
-              <div id="transcript" class="transcript-box" aria-live="polite"></div>
-            </div>
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h2 class="card-title text-primary mb-0">Speech-to-Text</h2>
+          <div class="btn-group">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline-primary btn-sm">Dashboard</a>
+            <a href="{% url 'performance' %}" class="btn btn-outline-primary btn-sm">Performance</a>
           </div>
-          <div class="col-md-6">
+        </div>
+        <div class="row g-3">
+          <div class="col-md-12">
             <div class="option-card">
               <h4>Upload Audio (Offline)</h4>
               <p class="card-text">Upload an audio file and get the transcript below.</p>
+              <p class="small text-muted mb-2">WAV recommended. MP3/WEBM supported if FFmpeg is installed.</p>
+              <div class="mb-3">
+                <button id="recordBtn" class="btn btn-outline-primary btn-sm" type="button">Record from Mic</button>
+                <button id="stopRecordBtn" class="btn btn-outline-secondary btn-sm" type="button" disabled>Stop</button>
+                <span id="recordStatus" class="small text-muted ms-2">Mic idle.</span>
+                <audio id="recordingPreview" controls class="d-block mt-2" style="width:100%; display:none;"></audio>
+                <button id="uploadRecordingBtn" class="btn btn-primary mt-2" type="button" disabled>Upload Recording</button>
+              </div>
               <form id="audioUploadForm" enctype="multipart/form-data">
                 <input type="file" id="audioFile" name="audio" accept="audio/*" required class="visually-hidden">
                 <label for="audioFile" class="btn btn-outline-primary btn-sm">Choose File</label>
@@ -75,59 +91,19 @@
 {% endblock %}
 {% block extra_js %}
 <script>
-const micBtn = document.getElementById('micBtn');
-const transcriptBox = document.getElementById('transcript');
-let recognition, listening = false;
-if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    recognition = new SpeechRecognition();
-    recognition.continuous = true;
-    recognition.interimResults = true;
-    recognition.lang = window.selectedLang || 'en-US';
-    recognition.onresult = function(event) {
-        let transcript = '';
-        for (let i = event.resultIndex; i < event.results.length; ++i) {
-            transcript += event.results[i][0].transcript;
-        }
-        transcriptBox.textContent = transcript;
-    };
-    recognition.onend = function() {
-        listening = false;
-        micBtn.textContent = 'Start Listening';
-        micBtn.classList.remove('listening');
-    };
-    micBtn.onclick = function() {
-        recognition.lang = window.selectedLang || 'en-US';
-        if (!listening) {
-            recognition.start();
-            listening = true;
-            micBtn.textContent = 'Stop Listening';
-            micBtn.classList.add('listening');
-        } else {
-            recognition.stop();
-            listening = false;
-            micBtn.textContent = 'Start Listening';
-            micBtn.classList.remove('listening');
-        }
-    };
-    document.getElementById('langSelect').addEventListener('change', function() {
-        if (listening) {
-            recognition.stop();
-            listening = false;
-            micBtn.textContent = 'Start Listening';
-            micBtn.classList.remove('listening');
-        }
-    });
-} else {
-    micBtn.disabled = true;
-    transcriptBox.textContent = 'Sorry, your browser does not support live speech recognition.';
-}
-
 // Offline transcription
 const audioUploadForm = document.getElementById('audioUploadForm');
 const offlineTranscriptBox = document.getElementById('offlineTranscript');
 const audioFileInput = document.getElementById('audioFile');
 const fileName = document.getElementById('fileName');
+
+function getCookie(name) {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop().split(';').shift();
+  return '';
+}
+const csrfToken = getCookie('csrftoken');
 audioFileInput.addEventListener('change', function() {
     const name = audioFileInput.files && audioFileInput.files.length > 0 ? audioFileInput.files[0].name : 'No file chosen';
     fileName.textContent = name;
@@ -138,7 +114,9 @@ audioUploadForm.addEventListener('submit', function(e) {
     offlineTranscriptBox.textContent = 'Transcribing...';
     fetch('/offline_transcribe/', {
         method: 'POST',
-        body: formData
+        headers: { 'X-CSRFToken': csrfToken },
+        body: formData,
+        credentials: 'same-origin'
     })
     .then(response => response.json())
     .then(data => {
@@ -147,6 +125,142 @@ audioUploadForm.addEventListener('submit', function(e) {
     .catch(() => {
         offlineTranscriptBox.textContent = 'Error during transcription.';
     });
+});
+
+// Mic recording for offline transcription (WAV via WebAudio)
+const recordBtn = document.getElementById('recordBtn');
+const stopRecordBtn = document.getElementById('stopRecordBtn');
+const recordStatus = document.getElementById('recordStatus');
+const recordingPreview = document.getElementById('recordingPreview');
+const uploadRecordingBtn = document.getElementById('uploadRecordingBtn');
+let audioContext = null;
+let mediaStream = null;
+let processor = null;
+let input = null;
+let recording = false;
+let recordedBuffers = [];
+let recordedBlob = null;
+
+function mergeBuffers(buffers, totalLength) {
+  const result = new Float32Array(totalLength);
+  let offset = 0;
+  buffers.forEach(b => {
+    result.set(b, offset);
+    offset += b.length;
+  });
+  return result;
+}
+
+function floatTo16BitPCM(output, offset, input) {
+  for (let i = 0; i < input.length; i++, offset += 2) {
+    let s = Math.max(-1, Math.min(1, input[i]));
+    output.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+  }
+}
+
+function writeWavHeader(view, sampleRate, numSamples) {
+  const numChannels = 1;
+  const bitsPerSample = 16;
+  const blockAlign = numChannels * bitsPerSample / 8;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = numSamples * blockAlign;
+
+  function writeString(offset, str) {
+    for (let i = 0; i < str.length; i++) {
+      view.setUint8(offset + i, str.charCodeAt(i));
+    }
+  }
+
+  writeString(0, 'RIFF');
+  view.setUint32(4, 36 + dataSize, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, 1, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitsPerSample, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+}
+
+async function startRecording() {
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    recordStatus.textContent = 'Mic not supported in this browser.';
+    return;
+  }
+  try {
+    mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    input = audioContext.createMediaStreamSource(mediaStream);
+    processor = audioContext.createScriptProcessor(4096, 1, 1);
+    recordedBuffers = [];
+    processor.onaudioprocess = (e) => {
+      if (!recording) return;
+      const channel = e.inputBuffer.getChannelData(0);
+      recordedBuffers.push(new Float32Array(channel));
+    };
+    input.connect(processor);
+    processor.connect(audioContext.destination);
+    recording = true;
+    recordStatus.textContent = 'Recording...';
+    recordBtn.disabled = true;
+    stopRecordBtn.disabled = false;
+  } catch (err) {
+    recordStatus.textContent = 'Mic permission denied or unavailable.';
+  }
+}
+
+function stopRecording() {
+  if (!recording) return;
+  recording = false;
+  recordBtn.disabled = false;
+  stopRecordBtn.disabled = true;
+  recordStatus.textContent = 'Recording stopped.';
+
+  const sampleRate = audioContext.sampleRate;
+  const totalLength = recordedBuffers.reduce((sum, b) => sum + b.length, 0);
+  const merged = mergeBuffers(recordedBuffers, totalLength);
+  const buffer = new ArrayBuffer(44 + totalLength * 2);
+  const view = new DataView(buffer);
+  writeWavHeader(view, sampleRate, totalLength);
+  floatTo16BitPCM(view, 44, merged);
+  recordedBlob = new Blob([view], { type: 'audio/wav' });
+
+  const url = URL.createObjectURL(recordedBlob);
+  recordingPreview.src = url;
+  recordingPreview.style.display = 'block';
+  uploadRecordingBtn.disabled = false;
+
+  if (processor) processor.disconnect();
+  if (input) input.disconnect();
+  if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+  if (audioContext) audioContext.close();
+}
+
+recordBtn.addEventListener('click', startRecording);
+stopRecordBtn.addEventListener('click', stopRecording);
+
+uploadRecordingBtn.addEventListener('click', () => {
+  if (!recordedBlob) return;
+  const formData = new FormData();
+  formData.append('audio', recordedBlob, 'recording.wav');
+  offlineTranscriptBox.textContent = 'Transcribing...';
+  fetch('/offline_transcribe/', {
+    method: 'POST',
+    headers: { 'X-CSRFToken': csrfToken },
+    body: formData,
+    credentials: 'same-origin'
+  })
+  .then(response => response.json())
+  .then(data => {
+    offlineTranscriptBox.textContent = data.transcript || data.error;
+  })
+  .catch(() => {
+    offlineTranscriptBox.textContent = 'Error during transcription.';
+  });
 });
 </script>
 {% endblock %}

@@ -1,18 +1,24 @@
 {% extends 'base.html' %}
-{% block title %}Courses | Inclusive Learning System{% endblock %}
+{% block title %}Subjects | Inclusive Learning System{% endblock %}
 {% block content %}
-<h2>Courses</h2>
-<div class="row">
+<h2>Subjects</h2>
+<ul class="mb-0">
   {% for course in courses %}
-  <div class="col-md-4 mb-4">
-    <div class="card h-100">
-      <div class="card-body">
-        <h5 class="card-title">{{ course.title }}</h5>
-        <p class="card-text">{{ course.description }}</p>
-        <a href="{% url course.detail_url course.id %}" class="btn btn-primary">View Details</a>
-      </div>
-    </div>
-  </div>
+    <li>
+      <a href="{% url course.detail_url course.id %}" class="link-primary">{{ course.title }}</a>
+    </li>
   {% endfor %}
+</ul>
+
+<div class="card mt-4">
+  <div class="card-body">
+    <h4 class="card-title">NECTA</h4>
+    <p class="card-text">NECTA resources and updates will appear here.</p>
+    <ul class="mb-0">
+      <li><a href="#" class="link-primary">Examination formats</a></li>
+      <li><a href="{% url 'past_papers_home' %}" class="link-primary">Past papers</a></li>
+      <li><a href="#" class="link-primary">Results and announcements</a></li>
+    </ul>
+  </div>
 </div>
 {% endblock %}

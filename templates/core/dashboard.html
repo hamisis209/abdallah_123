@@ -1,27 +1,266 @@
 {% extends 'base.html' %}
 {% block title %}Dashboard | Inclusive Learning System{% endblock %}
+{% block extra_head %}
+<style>
+  :root {
+    --aris-blue: #1181c7;
+    --aris-blue-dark: #0c6aa4;
+    --aris-side: #0e76b3;
+    --aris-bg: #f4f6f8;
+    --aris-card: #ffffff;
+    --aris-border: #dfe6ee;
+    --aris-text: #27313a;
+    --aris-muted: #6b7785;
+  }
+  .aris-layout {
+    display: grid;
+    grid-template-columns: 200px 1fr;
+    min-height: 70vh;
+    background: var(--aris-bg);
+    border: 1px solid var(--aris-border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+  .aris-sidebar {
+    background: var(--aris-side);
+    color: #fff;
+    padding: 16px 12px;
+  }
+  .aris-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .aris-logo-mark {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 30% 30%, #33b6ff, #0b5c9a);
+  }
+  .aris-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 10px;
+    font-size: 0.95rem;
+  }
+  .aris-nav a {
+    color: #eaf6ff;
+    text-decoration: none;
+    padding: 8px 10px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .aris-nav a:hover,
+  .aris-nav a.active {
+    background: rgba(255, 255, 255, 0.12);
+  }
+  .aris-main {
+    background: #fff;
+  }
+  .aris-topbar {
+    background: var(--aris-blue);
+    color: #fff;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .aris-topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .aris-topbar-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #cfe3f6;
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    flex: 0 0 auto;
+  }
+  .aris-topbar-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+  }
+  .aris-topbar .status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.9rem;
+  }
+  .aris-pill {
+    background: #19b35d;
+    color: #fff;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+  }
+  .aris-content {
+    padding: 18px;
+  }
+  .aris-hero {
+    background: linear-gradient(90deg, #f6f7f9 0%, #e9eef5 100%);
+    border: 1px solid var(--aris-border);
+    border-radius: 8px;
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+  .aris-avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #cfe3f6;
+    border: 2px solid #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  }
+  .aris-hero-title {
+    font-weight: 700;
+    color: var(--aris-text);
+  }
+  .aris-hero-sub {
+    font-size: 0.85rem;
+    color: var(--aris-muted);
+  }
+  .aris-grid {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 16px;
+  }
+  .aris-card {
+    min-height: 210px;
+  }
+  .aris-card .list-group {
+    margin-bottom: 0;
+  }
+  .aris-hero-title {
+    font-size: 1rem;
+  }
+  .aris-hero-sub {
+    font-size: 0.85rem;
+  }
+  .aris-card {
+    background: var(--aris-card);
+    border: 1px solid var(--aris-border);
+    border-radius: 8px;
+    padding: 16px;
+  }
+  .aris-card h4 {
+    font-size: 1rem;
+    margin: 0 0 10px;
+    color: var(--aris-text);
+  }
+  .aris-kv {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 12px;
+    font-size: 0.9rem;
+  }
+  .aris-kv div {
+    overflow-wrap: anywhere;
+  }
+  .aris-kv span {
+    color: var(--aris-muted);
+  }
+  .aris-profile-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-top: 16px;
+  }
+  .aris-kv .full {
+    grid-column: 1 / -1;
+  }
+  .aris-links .list-group-item {
+    border: 1px solid var(--aris-border);
+    border-radius: 6px;
+    margin-bottom: 8px;
+  }
+  .aris-links .list-group-item:hover {
+    border-color: var(--aris-blue);
+  }
+  @media (max-width: 900px) {
+    .aris-layout { grid-template-columns: 1fr; }
+    .aris-sidebar { display: none; }
+    .aris-grid { grid-template-columns: 1fr; }
+    .aris-profile-grid { grid-template-columns: 1fr; }
+  }
+</style>
+{% endblock %}
 {% block content %}
-<div class="row">
-    <div class="col-md-8 mx-auto">
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <h2 class="card-title mb-1 text-center text-primary">Inclusive Learning System</h2>
-                <p class="text-muted mb-3">Dashboard</p>
-                <p class="card-text">
-                    Welcome to Inclusive Learning System{% if user.is_authenticated %}, {{ user.username }}{% endif %}.
-                </p>
-                <p class="card-text">
-                    Use the links below to access the main tools.
-                </p>
-                <div class="list-group mt-4">
-                    <a href="{% url 'transcribe' %}" class="list-group-item list-group-item-action">Transcribe Live</a>
-                    <a href="/courses/" class="list-group-item list-group-item-action">Courses</a>
-                    <a href="/notifications/" class="list-group-item list-group-item-action">Notifications</a>
-                    <a href="/admin/" class="list-group-item list-group-item-action">Admin Panel</a>
-                </div>
-                <p class="text-center text-muted mt-4 mb-0">Created by mlagaza</p>
-            </div>
-        </div>
+<div class="aris-layout">
+  <aside class="aris-sidebar">
+    <div class="aris-logo">
+      <span class="aris-logo-mark"></span>
+      <span>Inclusive Learning</span>
     </div>
+    <div class="aris-nav">
+      <a class="active" href="/">Dashboard</a>
+      <a href="{% url 'profile' %}">My Profile</a>
+      <a href="/courses/">Academics</a>
+      <a href="{% url 'transcribe' %}">Transcribe</a>
+      <a href="/notifications/">Notifications</a>
+      <a href="/admin/">Admin</a>
+    </div>
+  </aside>
+  <section class="aris-main">
+    <div class="aris-topbar">
+      <div>Dashboard</div>
+      <div class="aris-topbar-right">
+        <div class="aris-topbar-avatar" aria-label="Profile photo">
+          {% if profile and profile.photo %}
+            <img src="{{ profile.photo.url }}" alt="Profile photo">
+          {% else %}
+            <img src="/static/profile-placeholder.jpg" alt="Profile photo">
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="aris-content">
+      <div class="aris-hero">
+        <div class="aris-avatar"></div>
+        <div>
+          <div class="aris-hero-title">
+            Welcome{% if user.is_authenticated %}, {{ user.username }}{% endif %}
+          </div>
+          <div class="aris-hero-sub">Inclusive Learning System</div>
+        </div>
+      </div>
+
+      <div class="aris-grid">
+        <div class="aris-card">
+          <h4>Quick Access</h4>
+          <div class="list-group aris-links">
+            <a href="{% url 'transcribe' %}" class="list-group-item list-group-item-action">Transcribe</a>
+            <a href="/courses/" class="list-group-item list-group-item-action">Academics</a>
+            <a href="/notifications/" class="list-group-item list-group-item-action">Notifications</a>
+            <a href="/admin/" class="list-group-item list-group-item-action">Admin Panel</a>
+          </div>
+        </div>
+        {% if user.is_authenticated %}
+        <div class="aris-card">
+          <h4>Profile Shortcuts</h4>
+          <div class="list-group aris-links">
+            <a href="{% url 'profile' %}" class="list-group-item list-group-item-action">View Profile</a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+
+      <p class="text-center text-muted mt-4 mb-0">Created by mlagaza</p>
+    </div>
+  </section>
 </div>
 {% endblock %}

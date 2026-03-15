@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Annual Past Papers | Inclusive Learning System{% endblock %}
+{% block content %}
+<h2>Annual Past Papers</h2>
+<p class="text-muted">Select a form to view annual past papers.</p>
+
+<div class="row">
+  {% for form in forms %}
+  <div class="col-md-4 mb-4">
+    <div class="card h-100">
+      <div class="card-body">
+        <h5 class="card-title">{{ form.label }}</h5>
+        <p class="card-text">Annual past papers.</p>
+        <a href="{% url 'annual_past_papers_form' form.slug %}" class="btn btn-primary">View Papers</a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<a href="{% url 'past_papers_home' %}" class="btn btn-secondary mt-3">Back to Past Papers</a>
+{% endblock %}
