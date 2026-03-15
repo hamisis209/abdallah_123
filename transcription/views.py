@@ -35,8 +35,9 @@ def _transcribe_wav_path(path):
     with sf.SoundFile(path) as f:
         rec = KaldiRecognizer(_get_model(), f.samplerate)
         parts = []
+        # Larger chunks reduce Python overhead without changing recognition logic.
         while True:
-            data = f.read(4000, dtype='int16')
+            data = f.read(16000, dtype='int16')
             if data.size == 0:
                 break
             if data.ndim > 1:
