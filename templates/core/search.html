@@ -1,0 +1,113 @@
+{% extends 'base.html' %}
+{% block title %}Search Results | Inclusive Learning System{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">Search Results</h1>
+
+        {% if query %}
+            <p class="text-muted">Found {{ total_results }} results for "{{ query }}"</p>
+        {% else %}
+            <p class="text-muted">Enter a search term to find courses, topics, lessons, and transcripts.</p>
+        {% endif %}
+
+        {% if results.courses %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Courses ({{ results.courses|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for course in results.courses %}
+                    <a href="{% url 'course_detail' course.id %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ course.title }}</h6>
+                            <small>{{ course.level|title }}</small>
+                        </div>
+                        <p class="mb-1">{{ course.description|truncatechars:100 }}</p>
+                        <small class="text-muted">Code: {{ course.code }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if results.topics %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Topics ({{ results.topics|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for topic in results.topics %}
+                    <a href="{% url 'course_detail' topic.course.id %}#topic-{{ topic.id }}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ topic.title }}</h6>
+                            <small>{{ topic.form|title }}</small>
+                        </div>
+                        <p class="mb-1">{{ topic.description|truncatechars:100 }}</p>
+                        <small class="text-muted">{{ topic.course.title }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if results.lessons %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Lessons ({{ results.lessons|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for lesson in results.lessons %}
+                    <a href="{% url 'topic_notes' lesson.topic.course.id lesson.topic.form lesson.topic.slug %}" class="list-group-item list-group-item-action">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ lesson.title }}</h6>
+                            <small>{{ lesson.topic.form|title }}</small>
+                        </div>
+                        <p class="mb-1">{{ lesson.content|truncatechars:150 }}</p>
+                        <small class="text-muted">{{ lesson.topic.course.title }} > {{ lesson.topic.title }}</small>
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if results.transcripts %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">Transcripts ({{ results.transcripts|length }})</h5>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for transcript in results.transcripts %}
+                    <div class="list-group-item">
+                        <div class="d-flex w-100 justify-content-between">
+                            <h6 class="mb-1">{{ transcript.title }}</h6>
+                            <small>{{ transcript.language|upper }} • {{ transcript.created_at|date:"M d, Y" }}</small>
+                        </div>
+                        <p class="mb-1">{{ transcript.transcript_text|truncatechars:200 }}</p>
+                        {% if transcript.duration %}
+                        <small class="text-muted">Duration: {{ transcript.duration|floatformat:1 }}s • Words: {{ transcript.word_count }}</small>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        {% if query and total_results == 0 %}
+        <div class="alert alert-info">
+            <h5>No results found</h5>
+            <p>Try different keywords or check your spelling.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -81,15 +81,10 @@ def _fetch_necta_csee_subjects():
 		return None
 
 def _get_course_by_id(course_id):
-	if int(course_id) == 1:
-		return get_mathematics_course()
-	if int(course_id) == 2:
-		return get_physics_course()
-	if int(course_id) == 3:
-		return get_chemistry_course()
-	if int(course_id) == 4:
-		return get_biology_course()
-	return None
+    try:
+        return Course.objects.get(id=course_id, is_active=True)
+    except Course.DoesNotExist:
+        return None
 
 def _find_topic(course, form_name, topic_slug):
 	for division in course.get('divisions', []):
@@ -152,34 +147,10 @@ def _make_notes(topic):
 		],
 	}
 
+from .models import Course, Topic, Lesson, Quiz, UserProgress
+
 def course_list(request):
-    # Accurate course list with specific links for each course
-    courses = [
-        {
-            'id': 1,
-            'title': 'Mathematics',
-            'description': 'Mathematics for O-Level (Form 1-4) and Advanced (Form 5-6).',
-            'detail_url': 'course_detail',
-        },
-        {
-            'id': 2,
-            'title': 'Physics',
-            'description': 'Physics for O-Level (Form 1-4) and Advanced (Form 5-6).',
-            'detail_url': 'course_detail',
-        },
-        {
-            'id': 3,
-            'title': 'Chemistry',
-            'description': 'Chemistry for O-Level (Form 1-4) and Advanced (Form 5-6).',
-            'detail_url': 'course_detail',
-        },
-        {
-            'id': 4,
-            'title': 'Biology',
-            'description': 'Biology for O-Level (Form 1-4) and Advanced (Form 5-6).',
-            'detail_url': 'course_detail',
-        },
-    ]
+    courses = Course.objects.filter(is_active=True)
     necta_csee = _fetch_necta_csee_subjects()
     return render(request, 'courses/course_list.html', {'courses': courses, 'necta_csee': necta_csee})
 
@@ -569,56 +540,76 @@ def get_biology_course():
 
 
 def course_detail(request, course_id):
-	course = _get_course_by_id(course_id)
-	if not course:
-		course = {'id': course_id, 'title': f'Course {course_id}', 'description': 'Course details here.'}
-	return render(request, 'courses/course_detail.html', {'course': course})
+    course = _get_course_by_id(course_id)
+    if not course:
+        raise Http404("Course not found")
 
-# New view for form topics
+    # Get user progress if authenticated
+    user_progress = None
+    if request.user.is_authenticated:
+        user_progress, created = UserProgress.objects.get_or_create(
+            user=request.user,
+            course=course
+        )
+
+    # Group topics by form
+    topics_by_form = {}
+    for topic in course.topics.filter(is_active=True).order_by('form', 'order'):
+        form_key = topic.form
+        if form_key not in topics_by_form:
+            topics_by_form[form_key] = []
+        topics_by_form[form_key].append(topic)
+
+    context = {
+        'course': course,
+        'topics_by_form': topics_by_form,
+        'user_progress': user_progress,
+    }
+    return render(request, 'courses/course_detail.html', context)
+
 def form_topics(request, course_id, form_name):
-	course = _get_course_by_id(course_id)
-	if course:
-		for division in course['divisions']:
-			for form in division.get('forms', []):
-				if slugify(form['form']) == slugify(form_name):
-					return render(request, 'courses/form_topics.html', {
-						'course': course,
-						'division': division['name'],
-						'form': form['form'],
-						'topics': form['topics']
-					})
-	# fallback
-	return render(request, 'courses/form_topics.html', {
-		'course': {'id': course_id, 'title': f'Course {course_id}'},
-		'division': '',
-		'form': form_name,
-		'topics': []
-	})
+    course = _get_course_by_id(course_id)
+    if not course:
+        raise Http404("Course not found")
+
+    topics = course.topics.filter(form=form_name, is_active=True).order_by('order')
+
+    context = {
+        'course': course,
+        'form': form_name,
+        'topics': topics,
+    }
+    return render(request, 'courses/form_topics.html', context)
 
 def topic_notes(request, course_id, form_name, topic_slug):
-	course = _get_course_by_id(course_id)
-	if not course:
-		return render(request, 'courses/notes_topic.html', {
-			'course': {'id': course_id, 'title': f'Course {course_id}'},
-			'form': form_name,
-			'topic': topic_slug,
-			'notes': _make_notes(topic_slug),
-			'division': ''
-		})
-	found = _find_topic(course, form_name, topic_slug)
-	if not found:
-		return render(request, 'courses/notes_topic.html', {
-			'course': course,
-			'form': form_name,
-			'topic': topic_slug,
-			'notes': _make_notes(topic_slug),
-			'division': ''
-		})
-	notes = _make_notes(found['topic'])
-	return render(request, 'courses/notes_topic.html', {
-		'course': course,
-		'form': found['form'],
-		'topic': found['topic'],
-		'notes': notes,
-		'division': found['division']
-	})
+    course = _get_course_by_id(course_id)
+    if not course:
+        raise Http404("Course not found")
+
+    try:
+        topic = course.topics.get(slug=topic_slug, form=form_name, is_active=True)
+    except Topic.DoesNotExist:
+        raise Http404("Topic not found")
+
+    # Get lessons for this topic
+    lessons = topic.lessons.filter(is_active=True).order_by('order')
+
+    # Get user progress if authenticated
+    user_progress = None
+    completed_lessons = []
+    if request.user.is_authenticated:
+        user_progress, created = UserProgress.objects.get_or_create(
+            user=request.user,
+            course=course
+        )
+        completed_lessons = user_progress.completed_lessons.filter(topic=topic)
+
+    context = {
+        'course': course,
+        'topic': topic,
+        'lessons': lessons,
+        'form': form_name,
+        'user_progress': user_progress,
+        'completed_lessons': completed_lessons,
+    }
+    return render(request, 'courses/topic_detail.html', context)

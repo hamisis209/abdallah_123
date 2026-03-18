@@ -61,11 +61,17 @@
           </div>
         </div>
         <div class="row g-3">
-          <div class="col-md-12">
+          <div class="col-md-6">
             <div class="option-card">
-              <h4>Upload Audio (Offline)</h4>
-              <p class="card-text">Upload an audio file and get the transcript below.</p>
-              <p class="small text-muted mb-2">WAV recommended. MP3/WEBM supported if FFmpeg is installed.</p>
+              <h4>Record Audio</h4>
+              <p class="card-text">Record from your microphone and upload for transcription.</p>
+              <div class="mb-2">
+                <label class="form-label small mb-1">Model / Language</label>
+                <select id="recordModelSelect" class="form-select form-select-sm">
+                  <option value="en_vosk" selected>English (Vosk)</option>
+                  <option value="sw_wav2vec2">Swahili (wav2vec2)</option>
+                </select>
+              </div>
               <div class="mb-3">
                 <button id="recordBtn" class="btn btn-outline-primary btn-sm" type="button">Record from Mic</button>
                 <button id="stopRecordBtn" class="btn btn-outline-secondary btn-sm" type="button" disabled>Stop</button>
@@ -73,13 +79,40 @@
                 <audio id="recordingPreview" controls class="d-block mt-2" style="width:100%; display:none;"></audio>
                 <button id="uploadRecordingBtn" class="btn btn-primary mt-2" type="button" disabled>Upload Recording</button>
               </div>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="option-card">
+              <h4>Upload Audio</h4>
+              <p class="card-text">Upload an audio file and get the transcript below.</p>
+              <p class="small text-muted mb-2">WAV recommended. MP3/WEBM supported if FFmpeg is installed.</p>
               <form id="audioUploadForm" enctype="multipart/form-data">
+                <label class="form-label small mb-1">Model / Language</label>
+                <select id="uploadModelSelect" name="asr_model" class="form-select form-select-sm mb-2">
+                  <option value="en_vosk" selected>English (Vosk)</option>
+                  <option value="sw_wav2vec2">Swahili (wav2vec2)</option>
+                </select>
                 <input type="file" id="audioFile" name="audio" accept="audio/*" required class="visually-hidden">
                 <label for="audioFile" class="btn btn-outline-primary btn-sm">Choose File</label>
                 <div id="fileName" class="small text-muted mt-1">No file chosen</div>
                 <button type="submit" class="btn btn-primary mt-2">Upload & Transcribe</button>
               </form>
-              <div id="offlineTranscript" class="transcript-box mt-2"></div>
+            </div>
+          </div>
+          <div class="col-md-12">
+            <div id="offlineTranscript" class="transcript-box"></div>
+          </div>
+          <div class="col-md-12">
+            <div class="option-card">
+              <h4>Live Mic (Realtime)</h4>
+              <p class="card-text">Capture your microphone and transcribe directly in the browser.</p>
+              <div class="mic-actions">
+                <button id="liveStartBtn" class="mic-btn" type="button">Start Live</button>
+                <button id="liveStopBtn" class="btn btn-outline-secondary" type="button" disabled>Stop</button>
+              </div>
+              <div id="liveStatus" class="mic-status">Mic idle.</div>
+              <div id="livePerf" class="mic-status">Client latency: —</div>
+              <div id="liveTranscript" class="transcript-box mt-2"></div>
             </div>
           </div>
         </div>
@@ -133,6 +166,8 @@ const stopRecordBtn = document.getElementById('stopRecordBtn');
 const recordStatus = document.getElementById('recordStatus');
 const recordingPreview = document.getElementById('recordingPreview');
 const uploadRecordingBtn = document.getElementById('uploadRecordingBtn');
+const recordModelSelect = document.getElementById('recordModelSelect');
+const uploadModelSelect = document.getElementById('uploadModelSelect');
 let audioContext = null;
 let mediaStream = null;
 let processor = null;
@@ -247,6 +282,9 @@ uploadRecordingBtn.addEventListener('click', () => {
   if (!recordedBlob) return;
   const formData = new FormData();
   formData.append('audio', recordedBlob, 'recording.wav');
+  if (recordModelSelect && recordModelSelect.value) {
+    formData.append('asr_model', recordModelSelect.value);
+  }
   offlineTranscriptBox.textContent = 'Transcribing...';
   fetch('/offline_transcribe/', {
     method: 'POST',
@@ -262,5 +300,92 @@ uploadRecordingBtn.addEventListener('click', () => {
     offlineTranscriptBox.textContent = 'Error during transcription.';
   });
 });
+
+// Live mic transcription (browser-based)
+const liveStartBtn = document.getElementById('liveStartBtn');
+const liveStopBtn = document.getElementById('liveStopBtn');
+const liveStatus = document.getElementById('liveStatus');
+const livePerf = document.getElementById('livePerf');
+const liveTranscriptBox = document.getElementById('liveTranscript');
+const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+let liveRecognition = null;
+let liveFinal = '';
+let latencySamples = [];
+
+function setLiveDisabled(reason) {
+  liveStartBtn.disabled = true;
+  liveStopBtn.disabled = true;
+  liveStatus.textContent = reason;
+}
+
+function isSecureContextForMic() {
+  return window.isSecureContext || window.location.hostname === 'localhost';
+}
+
+if (!SpeechRecognition) {
+  setLiveDisabled('Live mic not supported in this browser.');
+} else if (!isSecureContextForMic()) {
+  setLiveDisabled('Live mic requires HTTPS (or localhost).');
+} else {
+  liveRecognition = new SpeechRecognition();
+  liveRecognition.continuous = true;
+  liveRecognition.interimResults = true;
+  liveRecognition.lang = 'en-US';
+
+  liveRecognition.onstart = () => {
+    liveStatus.textContent = 'Listening...';
+    liveStartBtn.disabled = true;
+    liveStopBtn.disabled = false;
+  };
+
+  liveRecognition.onend = () => {
+    liveStatus.textContent = 'Mic idle.';
+    liveStartBtn.disabled = false;
+    liveStopBtn.disabled = true;
+  };
+
+  liveRecognition.onerror = (e) => {
+    liveStatus.textContent = `Live mic error: ${e.error}`;
+  };
+
+  liveRecognition.onresult = (event) => {
+    let interim = '';
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      const text = event.results[i][0].transcript;
+      if (event.results[i].isFinal) {
+        liveFinal += text + ' ';
+      } else {
+        interim += text;
+      }
+    }
+    liveTranscriptBox.textContent = (liveFinal + interim).trim();
+
+    // Approximate client-side latency using event timestamp.
+    if (typeof event.timeStamp === 'number') {
+      const now = performance.now();
+      const latencyMs = Math.max(0, now - event.timeStamp);
+      latencySamples.push(latencyMs);
+      if (latencySamples.length > 20) latencySamples.shift();
+      const avg = latencySamples.reduce((a, b) => a + b, 0) / latencySamples.length;
+      livePerf.textContent = `Client latency: ${latencyMs.toFixed(0)} ms (avg ${avg.toFixed(0)} ms)`;
+    }
+  };
+
+  liveStartBtn.addEventListener('click', () => {
+    liveFinal = '';
+    liveTranscriptBox.textContent = '';
+    latencySamples = [];
+    livePerf.textContent = 'Client latency: —';
+    try {
+      liveRecognition.start();
+    } catch (err) {
+      liveStatus.textContent = 'Live mic already started.';
+    }
+  });
+
+  liveStopBtn.addEventListener('click', () => {
+    liveRecognition.stop();
+  });
+}
 </script>
 {% endblock %}

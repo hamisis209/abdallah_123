@@ -26,6 +26,10 @@
         <li class="nav-item"><a class="nav-link" href="/transcribe/">Transcribe</a></li>
         <li class="nav-item"><a class="nav-link" href="/notifications/">Notifications</a></li>
       </ul>
+      <form class="d-flex me-3" action="{% url 'search' %}" method="get">
+        <input class="form-control me-2" type="search" name="q" placeholder="Search..." aria-label="Search" value="{{ request.GET.q }}">
+        <button class="btn btn-outline-light" type="submit">Search</button>
+      </form>
       <ul class="navbar-nav">
         {% if user.is_authenticated %}
         <li class="nav-item"><form method="post" action="/logout/">{% csrf_token %}<button class="btn btn-link nav-link" type="submit">Logout</button></form></li>
